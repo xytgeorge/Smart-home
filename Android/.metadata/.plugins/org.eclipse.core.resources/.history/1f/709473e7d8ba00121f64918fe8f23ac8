@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Final_Project</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Final Project by Xu Yiting 092732</string>
+    <string name="temperature">Temperature</string>
+    <string name="humidity">Humidity</string>
+    <string name="light">Light</string>
+    <string name="nope">-</string>
+    <string name="unit1">℃</string>
+    <string name="unit2">%Rh</string>
+    <string name="unit3">Lux</string>
+    <string name="status">Status</string>
+    <string name="refresh">Refresh</string>
+    <string name="submit">Submit</string>
+    <string name="defaultnumber">3</string>
+    <string name="curtain">Curtain</string>
+    <string name="fan">Fan</string>
+    <string name="lightonoff">Light</string>
+    <string name="window">Window</string>
+
+</resources>

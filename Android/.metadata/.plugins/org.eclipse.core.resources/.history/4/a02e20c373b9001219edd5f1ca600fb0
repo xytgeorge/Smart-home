@@ -1,0 +1,625 @@
+package com.example.httptest;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+
+import org.json.*;
+
+import android.media.MediaPlayer;
+import android.os.Bundle;
+import android.os.Handler;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.speech.RecognizerIntent;
+import android.view.Menu;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+	// StringBuffer textView = new StringBuffer();
+	private TextView tvJson1;
+	private TextView tvJson2;
+	private TextView tvJson3;
+	private TextView tvJson4;
+	private TextView tvJson5;
+	private TextView tvJson6;
+	private TextView tvJson7;
+	private TextView tvJson8;
+	
+	private Button bCall2;
+	
+	public String sLightTemp;
+	
+	public boolean findLightOn;
+	public boolean findLightOff;
+	
+	private Handler handler=new Handler();
+	
+	private SensorManager sensorManager;
+	private Sensor sensor;
+	
+	private long initTime = 0;
+	private long lastTime = 0;
+	private long curTime = 0;
+	private long duration = 0;
+	
+	private float last_x = 0.0f;
+	private float last_y = 0.0f;
+	private float last_z = 0.0f;
+	
+	private float shake = 0.0f;
+	private double speed = 0.0f;
+	private double speedmax = 0.0f;
+	private float totalShake = 0.0f;
+	private float x,y,z;
+	
+	private MediaPlayer mpTemperature;
+	private MediaPlayer mpHumidity;
+	private MediaPlayer mpCelsius;
+	private MediaPlayer mpHundred;
+	private MediaPlayer mpTens;
+	private MediaPlayer mpThousand;
+	private MediaPlayer mpPoint;
+	private MediaPlayer mpOne;
+	private MediaPlayer mpTwo;
+	private MediaPlayer mpThree;
+	private MediaPlayer mpFour;
+	private MediaPlayer mpFive;
+	private MediaPlayer mpSix;
+	private MediaPlayer mpSeven;
+	private MediaPlayer mpEight;
+	private MediaPlayer mpNine;
+	private MediaPlayer mpZero;
+	
+	private String sxDigital_Temperature;
+	private String sxDigital_Humidity;
+	private String sxLight_Digital;
+	private String syLightOnOff;
+
+	private static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		//bCall1 = (Button) this.findViewById(R.id.button1);
+		bCall2 = (Button) this.findViewById(R.id.button2);
+		tvJson1 = (TextView) this.findViewById(R.id.textView3);
+		tvJson2 = (TextView) this.findViewById(R.id.textView5);
+		tvJson3 = (TextView) this.findViewById(R.id.textView1);
+		tvJson4 = (TextView) this.findViewById(R.id.textView8);
+		tvJson5 = (TextView) this.findViewById(R.id.textView9);
+		tvJson6 = (TextView) this.findViewById(R.id.textView12);
+		tvJson7 = (TextView) this.findViewById(R.id.textView13);
+		tvJson8 = (TextView) this.findViewById(R.id.textView14);
+		
+		mpTemperature = MediaPlayer.create(this, R.raw.temperature);
+		mpHumidity = MediaPlayer.create(this, R.raw.humidity);
+		mpCelsius = MediaPlayer.create(this, R.raw.celsius_degree);
+		mpHundred = MediaPlayer.create(this, R.raw.hundred);
+		mpTens = MediaPlayer.create(this, R.raw.tens);
+		mpThousand = MediaPlayer.create(this, R.raw.thousand);
+		mpPoint = MediaPlayer.create(this, R.raw.point);
+		mpOne = MediaPlayer.create(this, R.raw.one);
+		mpTwo = MediaPlayer.create(this, R.raw.two);
+		mpThree = MediaPlayer.create(this, R.raw.three);
+		mpFour = MediaPlayer.create(this, R.raw.four);
+		mpFive = MediaPlayer.create(this, R.raw.five);
+		mpSix = MediaPlayer.create(this, R.raw.six);
+		mpSeven = MediaPlayer.create(this, R.raw.seven);
+		mpEight = MediaPlayer.create(this, R.raw.eight);
+		mpNine = MediaPlayer.create(this, R.raw.nine);
+		mpZero = MediaPlayer.create(this, R.raw.zero);
+
+		sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);   
+        sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        SensorEventListener sensorEventListener = new SensorEventListener() {   
+        	public void onSensorChanged(SensorEvent e) { 
+        		
+        			x = e.values[SensorManager.DATA_X];   
+        			y = e.values[SensorManager.DATA_Y];   
+        			z = e.values[SensorManager.DATA_Z];   
+        			float sum = x+y+z;
+        			     	  
+        			tvJson7.setText("x="+x+" y="+y+" z="+z+" sum="+sum);
+        			curTime = System.currentTimeMillis();
+        			
+        			//100毫秒检测一次
+        			if ((curTime - lastTime) > 100) 
+        			{
+        			
+        			duration = (curTime - lastTime);
+        			
+        			// 看是不是刚开始晃动
+        			if (last_x == 0.0f && last_y == 0.0f && last_z == 0.0f) {
+        			//last_x、last_y、last_z同时为0时,表示刚刚开始记录
+        			initTime = System.currentTimeMillis();
+        			} 
+        			else {
+        			// 单次晃动幅度
+        			float deltaX = x - last_x;
+        			float deltaY = y - last_y;
+        			float deltaZ = z - last_z;
+        			shake = (Math.abs(deltaX) + Math.abs(deltaY) + Math.abs(deltaZ)) / duration * 100;
+        			speed = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+        			if(speed > speedmax)
+        			{
+        				speedmax = speed;
+        			}
+        			
+        			}
+        			
+        			//把每次的晃动幅度相加，得到总体晃动幅度
+        			totalShake += shake;
+        			 // 判断是否为摇动，这是我自己写的标准，不准 确，只是用来做教学示例，别误会了^_^
+        			if (totalShake > 80 && speedmax > 20)
+        			{
+        				tvJson8.setText("总体晃动幅度=" + totalShake + "\n最大速度=" + speedmax );
+        				totalShake = 0;
+        				speedmax = 0;
+        				x=0;
+        				y=0;
+        				z=0;
+        				mpTemperature.start();
+        				VoiceParseNumbers(sxDigital_Temperature);
+        				mpCelsius.start();
+        				mpHumidity.start();
+        				VoiceParseNumbers(sxDigital_Humidity);
+        				
+        			}
+        			
+        			//tvJson2.setText("总体晃动幅度="+totalShake+"\n平均晃动幅度="+totalShake / (curTime - initTime) * 1000 );
+        			}
+        			
+        			last_x = x;
+        			last_y = y;
+        			last_z = z;
+        			lastTime = curTime;
+        			
+        			}
+        			
+        			
+			private void VoiceHumidity() {
+				// TODO Auto-generated method stub
+				
+			}
+
+
+			public void onAccuracyChanged(Sensor sensor, int accuracy) {
+				
+			}
+        	};
+        	
+       
+		sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+		
+		Runnable runnable=new Runnable() {
+		    @Override
+		    public void run() {
+				// TODO Auto-generated method stub
+		    	handler.postDelayed(this, 2000);
+		    	
+				HttpClient client = new DefaultHttpClient();
+
+				String getURL = "http://api.cosm.com/v2/feeds/119454.json?datastreams=xDigital_Humidity,xDigital_Temperature,xLight_Digital,yLightOnOff";
+
+				HttpGet getter = new HttpGet(getURL);
+
+				getter.setHeader("X-ApiKey", "tyo6j7R2afMSlSm6dTpppVAotXSSAKxYL0gvMEF4Y2pDQT0g");
+
+				HttpResponse response;
+
+				String strResult = "";
+
+				try {
+					response = client.execute(getter);
+					if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+
+						strResult = EntityUtils.toString(response.getEntity());
+						tvJson3.setText("Success");
+						// tvJson.setText(strResult);
+					}
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					tvJson3.setText("protocol error" + e);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					tvJson3.setText("IO error" + e);
+				}
+
+				sLightTemp = String.valueOf(parseJsonMulti(strResult));
+			}
+		};
+		
+		handler.postDelayed(runnable, 2000);
+		
+		PackageManager pm = getPackageManager();
+		List<ResolveInfo> activities = pm.queryIntentActivities(new Intent(
+				RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
+		if (activities.size() != 0) {
+			bCall2.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					startVoiceRecognitionActivity();
+
+				}
+			});
+		} else {
+			bCall2.setEnabled(false);
+			bCall2.setText("Recognizer not present");
+		}
+	}
+
+	private void startVoiceRecognitionActivity() {
+		Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+		intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+				RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+		intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech Recognition");
+		startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+	}
+
+	/**
+	 * Handle the results from the recognition activity.
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == VOICE_RECOGNITION_REQUEST_CODE
+				&& resultCode == RESULT_OK) {
+			// Fill the list view with the strings the recognizer thought it
+			// could have heard
+			ArrayList<String> matches = data
+					.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+			findLightOn = matches.contains("开灯");
+			findLightOff = matches.contains("关灯");
+			if (findLightOn && !findLightOff) {
+				tvJson4.setText("On");
+				sLightTemp = "1";
+			} else if (!findLightOn && findLightOff) {
+				tvJson4.setText("Off");
+				sLightTemp = "0";
+			} else if (!findLightOn && !findLightOff) {
+				tvJson4.setText("N/A");
+			} else {
+				tvJson4.setText("Wrong");
+			}
+
+			try {
+				HttpEntity strResult = null;
+
+				HttpClient httpclient = new DefaultHttpClient();
+
+				String uri = "http://api.cosm.com/v2/feeds/119454.json";
+
+				HttpPut httpput = new HttpPut(uri);
+
+				httpput.addHeader("X-ApiKey",
+						"tyo6j7R2afMSlSm6dTpppVAotXSSAKxYL0gvMEF4Y2pDQT0g");
+
+				// httppost.addHeader("Content-Length:", "130");
+
+				int lightTemp = 0;
+
+				if (sLightTemp.equals("1")) {
+					lightTemp = 1;
+				} else if (sLightTemp.equals("0")) {
+					lightTemp = 0;
+				}
+
+				String a = "{\"version\":\"1.0.0\",\"datastreams\":[{\"id\":\"yLightOnOff\",\"current_value\":\""
+						+ lightTemp + "\"}]}";
+
+				httpput.setEntity(new StringEntity(a));
+
+				HttpResponse response;
+
+				response = httpclient.execute(httpput);
+
+				int code = response.getStatusLine().getStatusCode();
+
+				if (code == 200) {
+
+					strResult = response.getEntity();
+
+				}
+			} catch (ClientProtocolException e) {
+				e.printStackTrace();
+				// tvJson4.setText(e.toString());
+			} catch (IOException e) {
+				e.printStackTrace();
+				// tvJson4.setText(e.toString());
+			} catch (Exception e) {
+				e.printStackTrace();
+				// tvJson4.setText(e.toString());
+			}
+		}
+
+		super.onActivityResult(requestCode, resultCode, data);
+	}
+
+	private int parseJsonMulti(String strResult) {
+		int lightTempTemp = 0;
+		try {
+			JSONArray jsObjs = new JSONObject(strResult)
+					.getJSONArray("datastreams");
+			for (int i = 0; i < jsObjs.length(); i++) {
+				JSONObject jsObj = ((JSONObject) jsObjs.opt(i));
+				String id = jsObj.getString("id");
+				if (id.equals("xDigital_Temperature")) {
+					double current_value = jsObj.getDouble("current_value");
+					sxDigital_Temperature += current_value;
+					tvJson1.setText(sxDigital_Temperature);
+				} else if (id.equals("xDigital_Humidity")) {
+					double current_value = jsObj.getDouble("current_value");
+					sxDigital_Humidity += current_value;
+					tvJson2.setText(sxDigital_Humidity);
+				} else if (id.equals("xLight_Digital")) {
+					double current_value = jsObj.getDouble("current_value");
+					sxLight_Digital += current_value;
+					tvJson6.setText(sxLight_Digital);
+				} else if (id.equals("yLightOnOff")) {
+					int current_value = jsObj.getInt("current_value");
+					lightTempTemp = current_value;
+					if (current_value == 1) {
+						syLightOnOff += "On";
+					} else if (current_value == 0) {
+						syLightOnOff += "Off";
+					} else {
+						syLightOnOff += "N/A";
+					}
+					tvJson5.setText(syLightOnOff);
+				} else {
+
+				}
+			}
+			tvJson3.setText("Refresh Success.");
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			tvJson3.setText("JSONException:" + e);
+		}
+		return lightTempTemp;
+	}
+	
+	public void VoiceParseNumbers(String s){
+		float temp = Float.parseFloat(s);
+		int temp_tho = ((int) (temp / 1000)) % 10;
+		int temp_hun = ((int) (temp / 100)) % 10;
+		int temp_ten = ((int) (temp / 10)) % 10;
+		int temp_sin = ((int) (temp % 10));
+		int temp_dec1 = ((int) (temp * 10)) % 10;
+		int temp_dec2 = ((int) (temp * 100)) % 10;
+		
+		if(temp_tho == 0)
+		{
+			if(temp_hun == 0)
+			{
+				if(temp_ten == 0)
+				{
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+				else
+				{
+					mpTens.start();
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+			}
+			else
+			{
+				VoiceNumber(temp_hun);
+				mpHundred.start();
+				VoiceNumber(temp_ten);
+				if(temp_ten == 0)
+				{
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+				else
+				{
+					mpTens.start();
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+			}
+		}
+		else
+		{
+			VoiceNumber(temp_tho);
+			mpThousand.start();
+			VoiceNumber(temp_hun);
+			if(temp_hun == 0)
+			{
+				VoiceNumber(temp_ten);
+				if(temp_ten == 0)
+				{
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+				else
+				{
+					mpTens.start();
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+			}
+			else
+			{
+				mpHundred.start();
+				VoiceNumber(temp_ten);
+				if(temp_ten == 0)
+				{
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+				else
+				{
+					mpTens.start();
+					if(temp_sin == 0)
+					{
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+					else
+					{
+						VoiceNumber(temp_sin);
+						mpPoint.start();
+						VoiceNumber(temp_dec1);
+						VoiceNumber(temp_dec2);
+					}
+				}
+			}
+		}
+	}
+	
+	public void VoiceNumber(int a)
+	{
+		switch (a)
+		{
+		case 1:
+			mpOne.start();
+			break;
+		case 2:
+			mpTwo.start();
+			break;
+		case 3:
+			mpThree.start();
+			break;
+		case 4:
+			mpFour.start();
+			break;
+		case 5:
+			mpFive.start();
+			break;
+		case 6:
+			mpSix.start();
+			break;
+		case 7:
+			mpSeven.start();
+			break;
+		case 8:
+			mpEight.start();
+			break;
+		case 9:
+			mpNine.start();
+			break;
+		case 0:
+			mpZero.start();
+			break;
+			
+		}
+		
+	}
+	
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+}
